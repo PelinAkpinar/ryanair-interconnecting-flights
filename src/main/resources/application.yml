@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: ryanair-flights
+  cache:
+    type: caffeine
+  logging:
+    level:
+      root: DEBUG
+      org.springframework: DEBUG
+      com.ryanair.flights: DEBUG
+
+server:
+  port: 8080
