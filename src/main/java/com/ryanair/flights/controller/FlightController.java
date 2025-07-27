@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -48,7 +49,8 @@ public class FlightController {
             throw new InvalidRequestException(ex.getMessage());
         }
 
-        FlightSearchCriteria flightSearchCriteria = new FlightSearchCriteria(departure, arrival, departureDateTimeParsed, arrivalDateTimeParsed);
+        FlightSearchCriteria flightSearchCriteria = new FlightSearchCriteria(departure.toUpperCase(Locale.ROOT),
+                arrival.toUpperCase(Locale.ROOT), departureDateTimeParsed, arrivalDateTimeParsed);
 
         FlightValidator.validateSearchCriteria(flightSearchCriteria);
 
