@@ -1,120 +1,147 @@
 package com.ryanair.flights.util;
 
 import com.ryanair.flights.exception.InvalidRequestException;
+import com.ryanair.flights.model.dto.FlightLeg;
 import com.ryanair.flights.model.internal.FlightSearchCriteria;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.LocalDateTime;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class FlightValidatorTest {
 
-    private FlightValidator flightValidator;
-    private final LocalDateTime start = LocalDateTime.of(2024, 8, 15, 10, 0);
-    private final LocalDateTime end = LocalDateTime.of(2024, 8, 16, 10, 0);
+    // Mocking the constant for test purposes
+    private static final int MINIMUM_LAYOVER_HOURS = 2;
 
-    @BeforeEach
-    void setUp() {
-        flightValidator = new FlightValidator();
+    @Test
+    void validateSearchCriteriaWhenValidShouldNotThrowException() {
+        LocalDateTime departureTime = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime arrivalTime = LocalDateTime.of(2023, 10, 27, 15, 0);
+        FlightSearchCriteria criteria = new FlightSearchCriteria("DUB", "WRO", departureTime, arrivalTime);
+
+        assertDoesNotThrow(() -> FlightValidator.validateSearchCriteria(criteria));
     }
 
     @Test
-    void validateSearchCriteriaPassWhenCriteriaIsValid() {
-        FlightSearchCriteria criteria = new FlightSearchCriteria(
-                "DUB",
-                "WRO",
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(1)
-        );
+    void validateSearchCriteriaWhenAirportsAreSameShouldThrowException() {
+        LocalDateTime departureTime = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime arrivalTime = LocalDateTime.of(2023, 10, 27, 15, 0);
+        FlightSearchCriteria criteria = new FlightSearchCriteria("DUB", "DUB", departureTime, arrivalTime);
 
-        assertDoesNotThrow(() -> flightValidator.validateSearchCriteria(criteria));
-    }
-
-    @Test
-    void validateSearchCriteriaThrowExceptionWhenDepartureIsInvalid() {
-        FlightSearchCriteria criteria = new FlightSearchCriteria(
-                "DUBLIN",
-                "WRO",
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(1)
-        );
-
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateSearchCriteria(criteria));
-        assertEquals("Invalid airport code: DUBLIN", exception.getMessage());
-    }
-
-    @Test
-    void validateSearchCriteriaThrowExceptionWhenDateRangeIsInvalid() {
-        FlightSearchCriteria criteria = new FlightSearchCriteria(
-                "DUB",
-                "WRO",
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now()
-        );
-
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateSearchCriteria(criteria));
-        assertEquals("Departure time must be before arrival time.", exception.getMessage());
+        assertThatThrownBy(() -> FlightValidator.validateSearchCriteria(criteria))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Departure and arrival airports cannot be the same.");
     }
 
 
     @Test
-    void validateAirportCodePassForValidCode() {
-        assertDoesNotThrow(() -> flightValidator.validateAirportCode("DUB"));
+    void validateAirportCodeWhenValidShouldNotThrow() {
+        assertDoesNotThrow(() -> FlightValidator.validateAirportCode("DUB"));
     }
 
     @ParameterizedTest
     @NullAndEmptySource
-    void validateAirportCodeThrowExceptionForNullOrEmptyCode(String invalidCode) {
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateAirportCode(invalidCode));
-        assertEquals("Airport code cannot be null or empty.", exception.getMessage());
+    void validateAirportCodeWhenNullOrEmptyShouldThrowException(String code) {
+        assertThatThrownBy(() -> FlightValidator.validateAirportCode(code))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Airport code cannot be null or empty.");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"AB", "ABCD", "123"})
-    void validateAirportCodeThrowExceptionForInvalidLength(String invalidCode) {
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateAirportCode(invalidCode));
-        assertEquals("Invalid airport code: " + invalidCode, exception.getMessage());
+    @CsvSource({
+            "DU, Invalid airport code: DU",
+            "DUBL, Invalid airport code: DUBL",
+            "dub, Invalid airport code: dub",
+            "D1B, Invalid airport code: D1B"
+    })
+    void validateAirportCodeWhenMalformedShouldThrowException(String code, String expectedMessage) {
+        assertThatThrownBy(() -> FlightValidator.validateAirportCode(code))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage(expectedMessage);
     }
 
 
     @Test
-    void validateDateTimeRangePassWhenStartIsBeforeEnd() {
-        assertDoesNotThrow(() -> flightValidator.validateDateTimeRange(start, end));
+    void validateDateTimeRangeWhenStartIsBeforeEndShouldNotThrow() {
+        LocalDateTime start = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime end = LocalDateTime.of(2023, 10, 27, 12, 0);
+        assertDoesNotThrow(() -> FlightValidator.validateDateTimeRange(start, end));
     }
 
     @Test
-    void validateDateTimeRangePassWhenStartIsEqualToEnd() {
-        assertDoesNotThrow(() -> flightValidator.validateDateTimeRange(start, start));
+    void validateDateTimeRangeWhenStartIsEqualToEndShouldNotThrow() {
+        LocalDateTime start = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime end = LocalDateTime.of(2023, 10, 27, 10, 0);
+        assertDoesNotThrow(() -> FlightValidator.validateDateTimeRange(start, end));
     }
 
     @Test
-    void validateDateTimeRangeThrowExceptionWhenStartIsNull() {
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateDateTimeRange(null, end));
-        assertEquals("Departure and arrival times cannot be null.", exception.getMessage());
+    void validateDateTimeRangeWhenStartIsAfterEndShouldThrowException() {
+        LocalDateTime start = LocalDateTime.of(2023, 10, 27, 12, 0);
+        LocalDateTime end = LocalDateTime.of(2023, 10, 27, 10, 0);
+        assertThatThrownBy(() -> FlightValidator.validateDateTimeRange(start, end))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Departure time must be before arrival time.");
     }
 
     @Test
-    void validateDateTimeRangeThrowExceptionWhenEndIsNull() {
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateDateTimeRange(start, null));
-        assertEquals("Departure and arrival times cannot be null.", exception.getMessage());
+    void validateDateTimeRangeWhenAnyDateIsNullShouldThrowException() {
+        LocalDateTime time = LocalDateTime.now();
+        assertThatThrownBy(() -> FlightValidator.validateDateTimeRange(null, time))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Departure and arrival times cannot be null.");
+
+        assertThatThrownBy(() -> FlightValidator.validateDateTimeRange(time, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Departure and arrival times cannot be null.");
+    }
+
+    private FlightLeg createFlightLeg(LocalDateTime departure, LocalDateTime arrival) {
+        FlightLeg leg = new FlightLeg();
+        leg.setFlightDepartureTime(departure);
+        leg.setFlightArrivalTime(arrival);
+        return leg;
     }
 
     @Test
-    void validateDateTimeRangeThrowExceptionWhenStartIsAfterEnd() {
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
-                () -> flightValidator.validateDateTimeRange(end, start));
-        assertEquals("Departure time must be before arrival time.", exception.getMessage());
+    void validateConnectionWhenLayoverIsExactlyMinimumShouldReturnTrue() {
+        LocalDateTime firstLegArrival = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime secondLegDeparture = firstLegArrival.plusHours(MINIMUM_LAYOVER_HOURS);
+
+        FlightLeg firstLeg = createFlightLeg(firstLegArrival.minusHours(2), firstLegArrival);
+        FlightLeg secondLeg = createFlightLeg(secondLegDeparture, secondLegDeparture.plusHours(2));
+
+        boolean isValid = FlightValidator.validateConnection(firstLeg, secondLeg);
+        assertThat(isValid).isTrue();
     }
 
+    @Test
+    void validateConnectionWhenLayoverIsSufficientShouldReturnTrue() {
+        LocalDateTime firstLegArrival = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime secondLegDeparture = firstLegArrival.plusHours(MINIMUM_LAYOVER_HOURS).plusMinutes(1);
+
+        FlightLeg firstLeg = createFlightLeg(firstLegArrival.minusHours(2), firstLegArrival);
+        FlightLeg secondLeg = createFlightLeg(secondLegDeparture, secondLegDeparture.plusHours(2));
+
+        boolean isValid = FlightValidator.validateConnection(firstLeg, secondLeg);
+        assertThat(isValid).isTrue();
+    }
+
+    @Test
+    void validateConnectionWhenLayoverIsInsufficientShouldReturnFalse() {
+        LocalDateTime firstLegArrival = LocalDateTime.of(2023, 10, 27, 10, 0);
+        LocalDateTime secondLegDeparture = firstLegArrival.plusHours(MINIMUM_LAYOVER_HOURS).minusMinutes(1);
+
+        FlightLeg firstLeg = createFlightLeg(firstLegArrival.minusHours(2), firstLegArrival);
+        FlightLeg secondLeg = createFlightLeg(secondLegDeparture, secondLegDeparture.plusHours(2));
+
+        boolean isValid = FlightValidator.validateConnection(firstLeg, secondLeg);
+        assertThat(isValid).isFalse();
+    }
 }

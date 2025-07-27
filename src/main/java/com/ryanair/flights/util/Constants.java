@@ -5,4 +5,8 @@ public class Constants {
     public static final String RYANAIR_OPERATOR = "RYANAIR";
     public static final String ROUTES_API_URL = "https://services-api.ryanair.com/views/locate/3/routes";
     public static final String SCHEDULES_API_URL = "https://services-api.ryanair.com/timtbl/3/schedules/{0}/{1}/years/{2}/months/{3}";
+
+    private Constants() {
+        // Private constructor to prevent instantiation
+    }
 }

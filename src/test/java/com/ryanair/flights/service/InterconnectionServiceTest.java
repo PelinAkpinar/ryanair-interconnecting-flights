@@ -1,7 +1,6 @@
 package com.ryanair.flights.service;
 
 import com.ryanair.flights.model.dto.Flight;
-import com.ryanair.flights.model.dto.FlightLeg;
 import com.ryanair.flights.model.internal.FlightSearchCriteria;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,18 +62,5 @@ class InterconnectionServiceTest {
         assertEquals(0, result.size());
         verify(routeService).findRoutesFrom("DUB");
         verify(routeService).findRoutesTo("WRO");
-    }
-
-    @Test
-    void validateConnectionReturnsFalseWhenArrivalAfterDeparture() {
-        FlightLeg firstLeg = new FlightLeg();
-        firstLeg.setFlightArrivalTime(LocalDateTime.now().plusHours(3));
-
-        FlightLeg secondLeg = new FlightLeg();
-        secondLeg.setFlightDepartureTime(LocalDateTime.now().plusHours(2));
-
-        boolean result = interconnectionService.validateConnection(firstLeg, secondLeg);
-
-        assertFalse(result);
     }
 }

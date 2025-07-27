@@ -7,12 +7,13 @@ import com.ryanair.flights.model.external.Schedule;
 import com.ryanair.flights.model.internal.FlightSearchCriteria;
 import com.ryanair.flights.model.internal.InternalSchedule;
 import com.ryanair.flights.util.Constants;
+import com.ryanair.flights.util.DateTimeUtil;
+import com.ryanair.flights.util.FlightValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +50,7 @@ public class InterconnectionService {
             return CompletableFuture.completedFuture(Collections.emptyList());
         }
 
-        List<YearMonth> monthsToScan = getMonthsBetween(criteria.getDepartureDateTime(), criteria.getArrivalDateTime());
+        List<YearMonth> monthsToScan = DateTimeUtil.getMonthsBetween(criteria.getDepartureDateTime(), criteria.getArrivalDateTime());
 
         List<CompletableFuture<List<Flight>>> monthlyFutures = directRoutes.stream()
                 .flatMap(route -> monthsToScan.stream().map(month ->
@@ -62,7 +63,7 @@ public class InterconnectionService {
                             InternalSchedule internalSchedule = new InternalSchedule(schedule, criteria, route, month);
                             return internalSchedule.getFlightsByDay().values().stream()
                                     .flatMap(List::stream)
-                                    .map(this::createDirectFlight)
+                                    .map(x -> Flight.createFlightsFromLegs(List.of(x)))
                                     .toList();
                         }).exceptionally(ex -> {
                             log.error("Failed to fetch direct schedule for route {}-{} and month {}",
@@ -141,8 +142,8 @@ public class InterconnectionService {
                 FlightLeg firstLeg = firstLegFlight.getLegs().getFirst();
                 FlightLeg secondLeg = secondLegFlight.getLegs().getFirst();
 
-                if (validateConnection(firstLeg, secondLeg)) {
-                    interconnected.add(buildFlightConnection(firstLeg, secondLeg));
+                if (FlightValidator.validateConnection(firstLeg, secondLeg)) {
+                    interconnected.add(Flight.createFlightsFromLegs(List.of(firstLeg, secondLeg)));
                 }
             }
         }
@@ -171,37 +172,5 @@ public class InterconnectionService {
                         .flatMap(List::stream)
                         .toList()
         );
-    }
-
-    private List<YearMonth> getMonthsBetween(LocalDateTime start, LocalDateTime end) {
-        List<YearMonth> months = new ArrayList<>();
-        YearMonth startMonth = YearMonth.from(start);
-        YearMonth endMonth = YearMonth.from(end);
-
-        while (!startMonth.isAfter(endMonth)) {
-            months.add(startMonth);
-            startMonth = startMonth.plusMonths(1);
-        }
-        return months;
-    }
-
-    private Flight createDirectFlight(FlightLeg flightLeg) {
-        Flight flight = new Flight();
-        flight.setStops(0);
-        flight.setLegs(List.of(flightLeg));
-        return flight;
-    }
-
-    public boolean validateConnection(FlightLeg firstLeg, FlightLeg secondLeg) {
-        // The arrival of the first leg must be at least 2 hours before the departure of the second leg
-        LocalDateTime earliestDepartureForSecondLeg = firstLeg.getFlightArrivalTime().plusHours(Constants.MINIMUM_LAYOVER_HOURS);
-        return !secondLeg.getFlightDepartureTime().isBefore(earliestDepartureForSecondLeg);
-    }
-
-    public Flight buildFlightConnection(FlightLeg firstLeg, FlightLeg secondLeg) {
-        Flight flight = new Flight();
-        flight.setStops(1);
-        flight.setLegs(List.of(firstLeg, secondLeg));
-        return flight;
     }
 }

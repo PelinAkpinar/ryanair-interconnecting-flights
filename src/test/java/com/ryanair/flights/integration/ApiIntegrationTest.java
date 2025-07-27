@@ -46,6 +46,18 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void testGetInterconnectionsWhenYearChanged() throws Exception {
+
+        mockMvc.perform(get(BASE_URL)
+                        .param("departure", "DUB")
+                        .param("arrival", "WRO")
+                        .param("departureDateTime", "2025-12-30T16:00")
+                        .param("arrivalDateTime", "2026-01-01T16:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
     void testGetInterconnectionsWithNotCorrectlyFormattedTime() throws Exception {
 
         mockMvc.perform(get(BASE_URL)

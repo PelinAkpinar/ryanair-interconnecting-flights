@@ -22,4 +22,11 @@ public class Flight {
     public Flight() {
 
     }
+
+    public static Flight createFlightsFromLegs(List<FlightLeg> legs) {
+        return Flight.builder()
+                .stops(legs.size() - 1)
+                .legs(legs)
+                .build();
+    }
 }

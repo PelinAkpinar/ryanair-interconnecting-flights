@@ -24,12 +24,10 @@ import java.util.concurrent.ExecutionException;
 public class FlightController {
 
     private final FlightService flightService;
-    private final FlightValidator flightValidator;
 
     @Autowired
-    public FlightController(FlightService flightService, FlightValidator flightValidator) {
+    public FlightController(FlightService flightService) {
         this.flightService = flightService;
-        this.flightValidator = flightValidator;
     }
 
     //http://localhost:8080/ryanair/interconnections?
@@ -52,7 +50,7 @@ public class FlightController {
 
         FlightSearchCriteria flightSearchCriteria = new FlightSearchCriteria(departure, arrival, departureDateTimeParsed, arrivalDateTimeParsed);
 
-        flightValidator.validateSearchCriteria(flightSearchCriteria);
+        FlightValidator.validateSearchCriteria(flightSearchCriteria);
 
         List<Flight> response = flightService.searchFlights(flightSearchCriteria);
 
