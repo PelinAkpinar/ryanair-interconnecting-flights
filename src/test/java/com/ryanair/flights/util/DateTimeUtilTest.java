@@ -21,19 +21,19 @@ class DateTimeUtilTest {
     }
 
     @Test
-    void isWithinTimeWindowReturnFalseWhenFlightStartsExactlyOnCriteriaDeparture() {
+    void isWithinTimeWindowReturnTrueWhenFlightStartsExactlyOnCriteriaDeparture() {
         LocalDateTime flightStart = criteriaDeparture;              // 10:00 AM
         LocalDateTime flightEnd = criteriaArrival.minusHours(1);    // 09:00 PM
 
-        assertFalse(DateTimeUtil.isWithinTimeWindow(criteriaDeparture, criteriaArrival, flightStart, flightEnd));
+        assertTrue(DateTimeUtil.isWithinTimeWindow(criteriaDeparture, criteriaArrival, flightStart, flightEnd));
     }
 
     @Test
-    void isWithinTimeWindowReturnFalseWhenFlightEndsExactlyOnCriteriaArrival() {
+    void isWithinTimeWindowReturnTrueWhenFlightEndsExactlyOnCriteriaArrival() {
         LocalDateTime flightStart = criteriaDeparture.plusHours(1);   // 11:00 AM
         LocalDateTime flightEnd = criteriaArrival;                  // 10:00 PM
 
-        assertFalse(DateTimeUtil.isWithinTimeWindow(criteriaDeparture, criteriaArrival, flightStart, flightEnd));
+        assertTrue(DateTimeUtil.isWithinTimeWindow(criteriaDeparture, criteriaArrival, flightStart, flightEnd));
     }
 
     @Test

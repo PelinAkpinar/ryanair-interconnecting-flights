@@ -8,7 +8,8 @@ import java.util.List;
 public class DateTimeUtil {
 
     public static boolean isWithinTimeWindow(LocalDateTime flightDepartureCriteria, LocalDateTime flightArrivalCriteria, LocalDateTime start, LocalDateTime end) {
-        return flightDepartureCriteria.isBefore(start) && flightArrivalCriteria.isAfter(end);
+        return (flightDepartureCriteria.isBefore(start) || flightDepartureCriteria.isEqual(start) )
+                && (flightArrivalCriteria.isAfter(end) || flightArrivalCriteria.isEqual(end));
     }
 
     public static List<YearMonth> getMonthsBetween(LocalDateTime start, LocalDateTime end) {
